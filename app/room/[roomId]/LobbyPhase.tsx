@@ -1,5 +1,6 @@
 import { Room } from '@/lib/game/types';
 import { useState } from 'react';
+import { Settings, Play, Users2, Clock, AlertCircle } from 'lucide-react';
 
 interface Props {
   room: Room;
@@ -38,41 +39,50 @@ export default function LobbyPhase({ room, playerId, isHost }: Props) {
   return (
     <div className="space-y-6">
       <div className="text-center">
-        <h2 className="text-2xl font-bold text-gray-800 mb-2">Lobby</h2>
-        <p className="text-gray-600">
+        <h2 className="text-2xl font-bold text-foreground mb-2">Lobby</h2>
+        <p className="text-muted-foreground">
           Warte auf weitere Spieler...
         </p>
       </div>
 
       {/* Game Settings */}
-      <div className="bg-gray-50 rounded-lg p-4">
-        <h3 className="font-semibold text-gray-800 mb-3">Spieleinstellungen</h3>
-        <div className="space-y-2 text-sm text-gray-700">
-          <div className="flex justify-between">
-            <span>Maximale Spieler:</span>
-            <span className="font-medium">{room.settings.maxPlayers}</span>
+      <div className="bg-secondary/50 border border-border rounded-lg p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <Settings className="w-4 h-4 text-primary" />
+          <h3 className="font-semibold text-foreground">Spieleinstellungen</h3>
+        </div>
+        <div className="space-y-2 text-sm text-muted-foreground">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              <Users2 className="w-4 h-4" />
+              <span>Maximale Spieler:</span>
+            </div>
+            <span className="font-medium text-foreground">{room.settings.maxPlayers}</span>
           </div>
-          <div className="flex justify-between">
-            <span>Anzahl Impostors:</span>
-            <span className="font-medium">{room.settings.impostorCount}</span>
+          <div className="flex justify-between items-center">
+            <span className="ml-6">Anzahl Impostors:</span>
+            <span className="font-medium text-destructive">{room.settings.impostorCount}</span>
           </div>
-          <div className="flex justify-between">
-            <span>Zweite Hinweisrunde:</span>
-            <span className="font-medium">
+          <div className="flex justify-between items-center">
+            <span className="ml-6">Zweite Hinweisrunde:</span>
+            <span className="font-medium text-foreground">
               {room.settings.useHint2 ? 'Ja' : 'Nein'}
             </span>
           </div>
-          <div className="flex justify-between">
-            <span>Diskussionszeit:</span>
-            <span className="font-medium">{room.settings.discussionTime}s</span>
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              <Clock className="w-4 h-4" />
+              <span>Diskussionszeit:</span>
+            </div>
+            <span className="font-medium text-foreground">{room.settings.discussionTime}s</span>
           </div>
         </div>
       </div>
 
       {/* Instructions */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <h3 className="font-semibold text-blue-900 mb-2">Spielregeln</h3>
-        <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
+      <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">
+        <h3 className="font-semibold text-primary mb-2">Spielregeln</h3>
+        <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
           <li>Crew-Mitglieder bekommen ein Wort</li>
           <li>Impostors bekommen kein Wort</li>
           <li>Alle geben Hinweise (nur 1 Wort!)</li>
@@ -84,8 +94,9 @@ export default function LobbyPhase({ room, playerId, isHost }: Props) {
 
       {/* Error Message */}
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
-          {error}
+        <div className="flex items-center gap-2 bg-destructive/20 border border-destructive/50 text-destructive-foreground px-4 py-3 rounded-lg text-sm">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          <span>{error}</span>
         </div>
       )}
 
@@ -94,8 +105,9 @@ export default function LobbyPhase({ room, playerId, isHost }: Props) {
         <button
           onClick={startGame}
           disabled={starting || room.players.length < 3}
-          className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold py-3 px-6 rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full crew-gradient text-white font-semibold py-3 px-6 rounded-lg hover:opacity-90 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
+          <Play className="w-5 h-5" />
           {starting
             ? 'Startet...'
             : room.players.length < 3
@@ -105,7 +117,7 @@ export default function LobbyPhase({ room, playerId, isHost }: Props) {
       )}
 
       {!isHost && (
-        <div className="text-center text-gray-600">
+        <div className="text-center text-muted-foreground bg-secondary/50 rounded-lg p-4 border border-border">
           Warte auf den Host, um das Spiel zu starten...
         </div>
       )}

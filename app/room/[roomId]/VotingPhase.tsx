@@ -1,5 +1,6 @@
 import { Room, Player } from '@/lib/game/types';
 import { useState } from 'react';
+import { Vote, CheckCircle2, AlertCircle, Users } from 'lucide-react';
 
 interface Props {
   room: Room;
@@ -54,13 +55,16 @@ export default function VotingPhase({ room, playerId }: Props) {
   return (
     <div className="space-y-6">
       <div className="text-center">
-        <h2 className="text-2xl font-bold text-gray-800 mb-2">Abstimmung</h2>
-        <p className="text-gray-600">Wähle den Impostor</p>
+        <h2 className="text-2xl font-bold text-foreground mb-2 flex items-center justify-center gap-2">
+          <Vote className="w-6 h-6" />
+          Abstimmung
+        </h2>
+        <p className="text-muted-foreground">Wähle den Impostor</p>
       </div>
 
       {!hasVoted ? (
         <div className="space-y-4">
-          <p className="text-gray-700 text-center">
+          <p className="text-foreground text-center font-medium">
             Wähle den Spieler, den du für den Impostor hältst:
           </p>
 
@@ -72,17 +76,17 @@ export default function VotingPhase({ room, playerId }: Props) {
                 onClick={() => setSelectedPlayer(player.id)}
                 className={`p-4 rounded-lg border-2 transition-all text-left ${
                   selectedPlayer === player.id
-                    ? 'border-purple-600 bg-purple-50'
-                    : 'border-gray-300 hover:border-purple-400'
+                    ? 'border-destructive bg-destructive/10'
+                    : 'border-border bg-secondary/50 hover:border-primary/50'
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <span className="font-medium text-gray-800">
+                  <span className="font-medium text-foreground">
                     {player.name} {player.isHost && '👑'}
                     {player.id === playerId && ' (Du)'}
                   </span>
                   {selectedPlayer === player.id && (
-                    <span className="text-purple-600">✓</span>
+                    <CheckCircle2 className="w-5 h-5 text-destructive" />
                   )}
                 </div>
               </button>
@@ -90,41 +94,45 @@ export default function VotingPhase({ room, playerId }: Props) {
           </div>
 
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
-              {error}
+            <div className="flex items-center gap-2 bg-destructive/20 border border-destructive/50 text-destructive-foreground px-4 py-3 rounded-lg text-sm">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              <span>{error}</span>
             </div>
           )}
 
           <button
             onClick={submitVote}
             disabled={voting || !selectedPlayer}
-            className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold py-3 px-6 rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full impostor-gradient text-white font-semibold py-3 px-6 rounded-lg hover:opacity-90 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
+            <Vote className="w-5 h-5" />
             {voting ? 'Stimme ab...' : 'Abstimmen'}
           </button>
         </div>
       ) : (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
-          <p className="text-green-900 font-medium mb-2">
-            ✓ Deine Stimme wurde abgegeben!
-          </p>
-          <p className="text-green-800 text-sm">
-            Warte auf die anderen Spieler...
-          </p>
+        <div className="flex items-center gap-2 bg-crew/20 border border-crew/50 text-crew-foreground px-4 py-3 rounded-lg">
+          <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
+          <div>
+            <p className="font-medium">Deine Stimme wurde abgegeben!</p>
+            <p className="text-sm opacity-90">Warte auf die anderen Spieler...</p>
+          </div>
         </div>
       )}
 
       {/* Vote Progress */}
-      <div className="bg-gray-50 rounded-lg p-4">
+      <div className="bg-secondary/50 border border-border rounded-lg p-4">
         <div className="flex justify-between items-center mb-2">
-          <span className="text-gray-700 font-medium">Fortschritt</span>
-          <span className="text-gray-600">
+          <div className="flex items-center gap-2">
+            <Users className="w-4 h-4 text-muted-foreground" />
+            <span className="text-foreground font-medium">Fortschritt</span>
+          </div>
+          <span className="text-muted-foreground">
             {votedCount}/{room.players.length}
           </span>
         </div>
-        <div className="w-full bg-gray-200 rounded-full h-2">
+        <div className="w-full bg-background rounded-full h-2">
           <div
-            className="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full transition-all"
+            className="bg-gradient-to-r from-primary to-crew h-2 rounded-full transition-all"
             style={{ width: `${(votedCount / room.players.length) * 100}%` }}
           />
         </div>
@@ -132,7 +140,7 @@ export default function VotingPhase({ room, playerId }: Props) {
 
       {/* Waiting For */}
       {votedCount < room.players.length && (
-        <div className="text-center text-gray-600 text-sm">
+        <div className="text-center text-muted-foreground text-sm bg-secondary/30 rounded-lg p-3 border border-border">
           Warte auf:{' '}
           {room.players
             .filter(p => !p.hasVoted)

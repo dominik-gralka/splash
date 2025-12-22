@@ -140,8 +140,11 @@ export default function RoomPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center">
-        <div className="text-white text-xl">Lädt...</div>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <div className="text-foreground text-xl">Lädt...</div>
+        </div>
       </div>
     );
   }
@@ -150,21 +153,21 @@ export default function RoomPage() {
     // Wenn wir reconnecten, zeige einen anderen Screen
     if (reconnecting && error === 'Warte auf Host...') {
       return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full text-center">
+        <div className="min-h-screen bg-background flex items-center justify-center p-4">
+          <div className="glass rounded-2xl shadow-2xl p-8 max-w-md w-full text-center backdrop-blur-xl border border-border/50">
             <div className="text-6xl mb-4">⏳</div>
-            <div className="text-yellow-600 text-xl mb-4">{error}</div>
-            <p className="text-gray-600 mb-4">
+            <div className="text-suspicious text-xl mb-4">{error}</div>
+            <p className="text-muted-foreground mb-4">
               Der Raum wird vom Host wiederhergestellt...
             </p>
             <div className="flex gap-2 justify-center">
-              <div className="w-3 h-3 bg-purple-600 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-              <div className="w-3 h-3 bg-purple-600 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-              <div className="w-3 h-3 bg-purple-600 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+              <div className="w-3 h-3 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+              <div className="w-3 h-3 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+              <div className="w-3 h-3 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
             </div>
             <button
               onClick={() => router.push('/')}
-              className="mt-6 bg-gray-200 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-300 transition"
+              className="mt-6 bg-secondary text-secondary-foreground px-6 py-2 rounded-lg hover:bg-secondary/80 transition"
             >
               Abbrechen
             </button>
@@ -174,12 +177,12 @@ export default function RoomPage() {
     }
 
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full text-center">
-          <div className="text-red-600 text-xl mb-4">{error || 'Raum nicht gefunden'}</div>
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="glass rounded-2xl shadow-2xl p-8 max-w-md w-full text-center backdrop-blur-xl border border-border/50">
+          <div className="text-destructive text-xl mb-4">{error || 'Raum nicht gefunden'}</div>
           <button
             onClick={() => router.push('/')}
-            className="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 transition"
+            className="bg-primary text-primary-foreground px-6 py-2 rounded-lg hover:bg-primary/90 transition"
           >
             Zurück zur Startseite
           </button>
@@ -192,43 +195,44 @@ export default function RoomPage() {
   const isHost = currentPlayer?.isHost || false;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 p-4">
+    <div className="min-h-screen bg-background p-4">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="bg-white rounded-t-2xl shadow-2xl p-6">
+        <div className="glass rounded-t-2xl shadow-2xl p-6 border border-border/50 backdrop-blur-xl">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
-                Splash
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-destructive via-primary to-crew bg-clip-text text-transparent">
+                SPLASH
               </h1>
-              <p className="text-gray-600 text-sm mt-1">Raum: {roomId}</p>
+              <p className="text-muted-foreground text-sm mt-1">Raum: <span className="text-foreground font-mono tracking-wider">{roomId}</span></p>
               {isHost && (
-                <p className="text-xs text-green-600 mt-1">
-                  ✓ Du bist der Host (State-Owner)
+                <p className="text-xs text-crew mt-1 flex items-center gap-1">
+                  <span className="w-2 h-2 bg-crew rounded-full animate-pulse"></span>
+                  Host (State-Owner)
                 </p>
               )}
             </div>
             <button
               onClick={leaveRoom}
-              className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition text-sm"
+              className="bg-destructive/20 border border-destructive text-destructive-foreground px-4 py-2 rounded-lg hover:bg-destructive/30 transition text-sm"
             >
               Verlassen
             </button>
           </div>
 
           {/* Players List */}
-          <div className="mt-4 pt-4 border-t border-gray-200">
-            <p className="text-sm font-medium text-gray-700 mb-2">
+          <div className="mt-4 pt-4 border-t border-border/50">
+            <p className="text-sm font-medium text-foreground mb-2">
               Spieler ({room.players.length}/{room.settings.maxPlayers})
             </p>
             <div className="flex flex-wrap gap-2">
               {room.players.map((player: Player) => (
                 <div
                   key={player.id}
-                  className={`px-3 py-1 rounded-full text-sm ${
+                  className={`px-3 py-1 rounded-full text-sm border ${
                     player.id === playerId
-                      ? 'bg-purple-600 text-white'
-                      : 'bg-gray-200 text-gray-800'
+                      ? 'bg-primary/20 text-primary border-primary'
+                      : 'bg-secondary text-secondary-foreground border-border'
                   }`}
                 >
                   {player.name} {player.isHost && '👑'}
@@ -239,7 +243,7 @@ export default function RoomPage() {
         </div>
 
         {/* Game Content */}
-        <div className="bg-white rounded-b-2xl shadow-2xl p-6">
+        <div className="glass rounded-b-2xl shadow-2xl p-6 border border-border/50 border-t-0 backdrop-blur-xl">
           {room.phase === 'lobby' && (
             <LobbyPhase
               room={room}

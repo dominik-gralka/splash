@@ -1,5 +1,6 @@
 import { Room } from '@/lib/game/types';
 import { useState } from 'react';
+import { Send, CheckCircle2, AlertCircle, MessageSquare } from 'lucide-react';
 
 interface Props {
   room: Room;
@@ -69,89 +70,93 @@ export default function HintPhase({ room, playerId, roundNum }: Props) {
   return (
     <div className="space-y-6">
       <div className="text-center">
-        <h2 className="text-2xl font-bold text-gray-800 mb-2">
+        <h2 className="text-2xl font-bold text-foreground mb-2">
           Hinweisrunde {roundNum}
         </h2>
-        <p className="text-gray-600">
+        <p className="text-muted-foreground">
           Gib einen Hinweis ab (nur 1 Wort!)
         </p>
       </div>
 
       {/* Word Reminder (only for crew) */}
       {currentPlayer?.role === 'crew' && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
-          <p className="text-blue-900">
-            Dein Wort: <span className="font-bold text-xl">{currentPlayer.word}</span>
-          </p>
+        <div className="crew-gradient text-white rounded-lg p-4 text-center border border-crew/50">
+          <p className="text-sm opacity-90 mb-1">Dein Wort:</p>
+          <p className="text-3xl font-bold tracking-wide">{currentPlayer.word}</p>
         </div>
       )}
 
       {currentPlayer?.role === 'impostor' && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
-          <p className="text-red-900 font-medium">
+        <div className="impostor-gradient text-white rounded-lg p-4 text-center border border-destructive/50">
+          <div className="flex items-center justify-center gap-2 font-medium">
+            <AlertCircle className="w-5 h-5" />
             Du bist der Impostor! Versuche nicht aufzufallen.
-          </p>
+          </div>
         </div>
       )}
 
       {/* Hint Input */}
       {!hasSubmitted ? (
         <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-foreground">
               Dein Hinweis
             </label>
-            <input
-              type="text"
-              value={hint}
-              onChange={(e) => setHint(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && submitHint()}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition text-gray-800"
-              placeholder="z.B. Sommer"
-              maxLength={30}
-              disabled={submitting}
-            />
-            <p className="text-xs text-gray-500 mt-1">
+            <div className="relative">
+              <MessageSquare className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+              <input
+                type="text"
+                value={hint}
+                onChange={(e) => setHint(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && submitHint()}
+                className="w-full pl-12 pr-4 py-3 bg-background/50 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition text-foreground placeholder:text-muted-foreground"
+                placeholder="z.B. Sommer"
+                maxLength={30}
+                disabled={submitting}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
               Nur ein einzelnes Wort! Keine Sätze oder Synonyme.
             </p>
           </div>
 
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
-              {error}
+            <div className="flex items-center gap-2 bg-destructive/20 border border-destructive/50 text-destructive-foreground px-4 py-3 rounded-lg text-sm">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              <span>{error}</span>
             </div>
           )}
 
           <button
             onClick={submitHint}
             disabled={submitting || !hint.trim()}
-            className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold py-3 px-6 rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full crew-gradient text-white font-semibold py-3 px-6 rounded-lg hover:opacity-90 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
+            <Send className="w-5 h-5" />
             {submitting ? 'Wird abgegeben...' : 'Hinweis abgeben'}
           </button>
         </div>
       ) : (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
-          <p className="text-green-900 font-medium">
-            ✓ Dein Hinweis wurde abgegeben!
-          </p>
+        <div className="flex items-center gap-2 bg-crew/20 border border-crew/50 text-crew-foreground px-4 py-3 rounded-lg">
+          <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
+          <span className="font-medium">Dein Hinweis wurde abgegeben!</span>
         </div>
       )}
 
       {/* Submitted Hints */}
       {hints.length > 0 && (
         <div>
-          <h3 className="font-semibold text-gray-800 mb-3">
+          <h3 className="font-semibold text-foreground mb-3">
             Abgegebene Hinweise ({hints.length}/{room.players.length})
           </h3>
           <div className="grid grid-cols-2 gap-2">
             {hints.map((h, idx) => (
               <div
                 key={idx}
-                className="bg-gray-100 rounded-lg p-3 text-center"
+                className="bg-secondary/50 border border-border rounded-lg p-3 text-center"
               >
-                <p className="text-sm text-gray-600">{h.playerName}</p>
-                <p className="font-bold text-gray-800 text-lg">{h.hint}</p>
+                <p className="text-xs text-muted-foreground mb-1">{h.playerName}</p>
+                <p className="font-bold text-foreground text-lg">{h.hint}</p>
               </div>
             ))}
           </div>
@@ -160,7 +165,7 @@ export default function HintPhase({ room, playerId, roundNum }: Props) {
 
       {/* Waiting For */}
       {waitingFor.length > 0 && (
-        <div className="text-center text-gray-600 text-sm">
+        <div className="text-center text-muted-foreground text-sm bg-secondary/30 rounded-lg p-3 border border-border">
           Warte auf: {waitingFor.map(p => p.name).join(', ')}
         </div>
       )}

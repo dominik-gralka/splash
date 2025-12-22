@@ -1,5 +1,6 @@
 import { Room } from '@/lib/game/types';
 import { useState, useEffect } from 'react';
+import { MessageCircle, Timer, ArrowRight } from 'lucide-react';
 
 interface Props {
   room: Room;
@@ -39,34 +40,50 @@ export default function DiscussionPhase({ room, playerId, isHost }: Props) {
 
   const hints1 = room.currentRound?.hints1 || [];
   const hints2 = room.currentRound?.hints2 || [];
+  const minutes = Math.floor(timeLeft / 60);
+  const seconds = timeLeft % 60;
 
   return (
     <div className="space-y-6">
       <div className="text-center">
-        <h2 className="text-2xl font-bold text-gray-800 mb-2">Diskussion</h2>
-        <p className="text-gray-600">Besprecht die Hinweise</p>
+        <h2 className="text-2xl font-bold text-foreground mb-2 flex items-center justify-center gap-2">
+          <MessageCircle className="w-6 h-6" />
+          Diskussion
+        </h2>
+        <p className="text-muted-foreground">Besprecht die Hinweise</p>
       </div>
 
       {/* Timer */}
-      <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg p-6 text-center">
-        <p className="text-white text-sm mb-2">Verbleibende Zeit</p>
-        <p className="text-white text-6xl font-bold">
-          {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
-        </p>
+      <div className="relative">
+        <div className={`rounded-lg p-6 text-center border ${
+          timeLeft > 30
+            ? 'bg-primary/10 border-primary/50'
+            : 'bg-destructive/10 border-destructive/50'
+        }`}>
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <Timer className="w-5 h-5 text-muted-foreground" />
+            <p className="text-muted-foreground text-sm">Verbleibende Zeit</p>
+          </div>
+          <p className={`text-6xl font-bold ${
+            timeLeft > 30 ? 'text-foreground' : 'text-destructive'
+          }`}>
+            {minutes}:{seconds.toString().padStart(2, '0')}
+          </p>
+        </div>
       </div>
 
       {/* All Hints */}
       <div className="space-y-4">
         <div>
-          <h3 className="font-semibold text-gray-800 mb-3">Hinweise Runde 1</h3>
+          <h3 className="font-semibold text-foreground mb-3">Hinweise Runde 1</h3>
           <div className="grid grid-cols-2 gap-2">
             {hints1.map((h, idx) => (
               <div
                 key={idx}
-                className="bg-blue-100 rounded-lg p-3 text-center"
+                className="bg-primary/10 border border-primary/30 rounded-lg p-3 text-center"
               >
-                <p className="text-sm text-blue-600">{h.playerName}</p>
-                <p className="font-bold text-blue-800 text-lg">{h.hint}</p>
+                <p className="text-xs text-muted-foreground mb-1">{h.playerName}</p>
+                <p className="font-bold text-primary text-lg">{h.hint}</p>
               </div>
             ))}
           </div>
@@ -74,15 +91,15 @@ export default function DiscussionPhase({ room, playerId, isHost }: Props) {
 
         {hints2.length > 0 && (
           <div>
-            <h3 className="font-semibold text-gray-800 mb-3">Hinweise Runde 2</h3>
+            <h3 className="font-semibold text-foreground mb-3">Hinweise Runde 2</h3>
             <div className="grid grid-cols-2 gap-2">
               {hints2.map((h, idx) => (
                 <div
                   key={idx}
-                  className="bg-purple-100 rounded-lg p-3 text-center"
+                  className="bg-crew/10 border border-crew/30 rounded-lg p-3 text-center"
                 >
-                  <p className="text-sm text-purple-600">{h.playerName}</p>
-                  <p className="font-bold text-purple-800 text-lg">{h.hint}</p>
+                  <p className="text-xs text-muted-foreground mb-1">{h.playerName}</p>
+                  <p className="font-bold text-crew text-lg">{h.hint}</p>
                 </div>
               ))}
             </div>
@@ -91,8 +108,8 @@ export default function DiscussionPhase({ room, playerId, isHost }: Props) {
       </div>
 
       {/* Instructions */}
-      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-        <p className="text-yellow-900 text-center">
+      <div className="bg-suspicious/20 border border-suspicious/50 rounded-lg p-4 text-center">
+        <p className="text-suspicious-foreground">
           Diskutiert, wer der Impostor sein könnte!
           <br />
           Achtet auf unpassende oder vage Hinweise.
@@ -104,14 +121,19 @@ export default function DiscussionPhase({ room, playerId, isHost }: Props) {
         <button
           onClick={advance}
           disabled={advancing}
-          className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold py-3 px-6 rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all shadow-lg disabled:opacity-50"
+          className="w-full bg-primary text-primary-foreground font-semibold py-3 px-6 rounded-lg hover:bg-primary/90 transition-all shadow-lg disabled:opacity-50 flex items-center justify-center gap-2"
         >
-          {advancing ? 'Lädt...' : 'Zur Abstimmung'}
+          {advancing ? 'Lädt...' : (
+            <>
+              Zur Abstimmung
+              <ArrowRight className="w-5 h-5" />
+            </>
+          )}
         </button>
       )}
 
       {!isHost && (
-        <div className="text-center text-gray-600">
+        <div className="text-center text-muted-foreground bg-secondary/50 rounded-lg p-4 border border-border">
           Warte auf den Host...
         </div>
       )}
