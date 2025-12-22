@@ -33,7 +33,7 @@ Ein Online-Multiplayer-Spiel für 3-10 Spieler, bei dem die Crew versucht, den I
 - **Framework**: Next.js 16 (App Router)
 - **Styling**: Tailwind CSS 4
 - **Sprache**: TypeScript
-- **State Management**: In-Memory (serverless-kompatibel)
+- **State Management**: Client Authority Pattern (keine Datenbank nötig!)
 
 ## Features
 
@@ -43,6 +43,8 @@ Ein Online-Multiplayer-Spiel für 3-10 Spieler, bei dem die Crew versucht, den I
 - ✅ Responsive Design
 - ✅ Konfigurierbare Spieleinstellungen
 - ✅ Rundenhistorie
+- ✅ **Client Authority**: Host hält den State, kein Datenbankbedarf
+- ✅ **Auto-Recovery**: Raum wird automatisch wiederhergestellt bei Server-Restart
 
 ## Development
 
@@ -61,6 +63,31 @@ npm start
 ```
 
 Die App läuft dann auf [http://localhost:3000](http://localhost:3000).
+
+## Architektur: Client Authority Pattern
+
+Dieses Spiel verwendet ein **Client Authority Pattern**, wodurch **keine Datenbank benötigt wird**:
+
+### Wie es funktioniert
+
+1. **Host = State Owner**: Der Spieler, der den Raum erstellt, hält den autoritativen State im Browser (localStorage)
+2. **Server = Relay**: Der Next.js Server speichert den State temporär im Memory und broadcasted ihn an andere Spieler
+3. **Auto-Recovery**: Wenn der Server neu startet (z.B. bei Vercel serverless cold start):
+   - Host erkennt, dass der State fehlt
+   - Host lädt den State aus localStorage automatisch wieder hoch
+   - Andere Spieler sehen "Warte auf Host..." und reconnecten automatisch
+
+### Vorteile
+
+- ✅ Keine Datenbank/Redis nötig
+- ✅ Funktioniert auf Vercel Free Tier
+- ✅ Automatische Wiederherstellung
+- ✅ Einfache Architektur
+
+### Einschränkungen
+
+- ⚠️ Host muss online bleiben (wenn Host geht, geht der Raum verloren)
+- ⚠️ State ist nicht persistent über Browser-Sessions hinweg (localStorage wird bei Browser-Clear gelöscht)
 
 ## Deployment auf Vercel
 
@@ -100,6 +127,7 @@ splash/
 - `POST /api/rooms/join` - Raum beitreten
 - `GET /api/rooms/[roomId]` - Raum-Status abrufen
 - `DELETE /api/rooms/[roomId]` - Raum verlassen
+- `PUT /api/rooms/[roomId]/sync` - **State synchronisieren (Host-only)**
 - `POST /api/game/start` - Spiel starten
 - `POST /api/game/hint` - Hinweis abgeben
 - `POST /api/game/vote` - Abstimmen

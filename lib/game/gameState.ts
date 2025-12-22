@@ -2,7 +2,28 @@ import { Room, Player, GameRound, CreateRoomRequest, Hint, Vote } from './types'
 import { getRandomWord } from './words';
 
 // In-Memory Storage für Räume
-const rooms = new Map<string, Room>();
+// WICHTIG: In serverless Umgebungen (Vercel) wird dieser State bei jedem Cold Start zurückgesetzt!
+// Für Production empfohlen: Vercel KV oder eine Datenbank verwenden
+// Für self-hosted: `next start` verwenden (kein serverless)
+let rooms: Map<string, Room>;
+
+// Singleton Pattern - verhindert multiple Instanzen
+if (typeof global !== 'undefined') {
+  // @ts-ignore - global augmentation
+  if (!global.__gameRooms) {
+    // @ts-ignore
+    global.__gameRooms = new Map<string, Room>();
+  }
+  // @ts-ignore
+  rooms = global.__gameRooms;
+} else {
+  rooms = new Map<string, Room>();
+}
+
+// Debugging: Logge State-Änderungen
+if (process.env.NODE_ENV === 'development') {
+  console.log(`[GameState] Initialized with ${rooms.size} rooms`);
+}
 
 // Hilfsfunktion: Generiere Raum-ID
 function generateRoomId(): string {
