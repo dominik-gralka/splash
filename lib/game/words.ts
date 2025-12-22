@@ -1,0 +1,105 @@
+// Wörterliste für das Splash-Spiel
+export const WORD_LIST = [
+  // Orte
+  'Strand',
+  'Krankenhaus',
+  'Schule',
+  'Club',
+  'Flughafen',
+  'Kino',
+  'Restaurant',
+  'Park',
+  'Bibliothek',
+  'Supermarkt',
+  'Hotel',
+  'Museum',
+  'Bahnhof',
+  'Kirche',
+  'Fitness-Studio',
+
+  // Dinge
+  'Pizza',
+  'Fahrrad',
+  'Laptop',
+  'Kaffee',
+  'Handy',
+  'Buch',
+  'Auto',
+  'Regenschirm',
+  'Brille',
+  'Gitarre',
+  'Kamera',
+  'Kopfhörer',
+  'Schlüssel',
+  'Uhr',
+  'Sofa',
+
+  // Situationen
+  'Date',
+  'Prüfung',
+  'Urlaub',
+  'Stau',
+  'Konzert',
+  'Hochzeit',
+  'Geburtstag',
+  'Bewerbungsgespräch',
+  'Arztbesuch',
+  'Umzug',
+  'Party',
+  'Abschlussfeier',
+  'Familientreffen',
+  'Sportwettkampf',
+  'Vorstellungsgespräch',
+
+  // Tiere
+  'Hund',
+  'Katze',
+  'Elefant',
+  'Pinguin',
+  'Delfin',
+  'Löwe',
+  'Schmetterling',
+  'Adler',
+  'Krokodil',
+  'Giraffe',
+
+  // Essen & Trinken
+  'Eis',
+  'Schokolade',
+  'Burger',
+  'Sushi',
+  'Bier',
+  'Wein',
+  'Tee',
+  'Kuchen',
+  'Salat',
+  'Pasta',
+
+  // Aktivitäten
+  'Schwimmen',
+  'Tanzen',
+  'Kochen',
+  'Lesen',
+  'Joggen',
+  'Malen',
+  'Singen',
+  'Wandern',
+  'Gärtnern',
+  'Shoppen',
+
+  // Berufe
+  'Arzt',
+  'Lehrer',
+  'Koch',
+  'Pilot',
+  'Polizist',
+  'Feuerwehrmann',
+  'Musiker',
+  'Künstler',
+  'Programmierer',
+  'Anwalt',
+];
+
+export function getRandomWord(): string {
+  return WORD_LIST[Math.floor(Math.random() * WORD_LIST.length)];
+}
