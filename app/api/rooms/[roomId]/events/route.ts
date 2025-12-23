@@ -10,6 +10,10 @@ export async function GET(
 ) {
   const { roomId } = await params;
 
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`[SSE] New connection for room ${roomId}`);
+  }
+
   // Create a ReadableStream for SSE
   const encoder = new TextEncoder();
 
@@ -20,6 +24,13 @@ export async function GET(
       if (room) {
         const data = `data: ${JSON.stringify(room)}\n\n`;
         controller.enqueue(encoder.encode(data));
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`[SSE] Sent initial state for room ${roomId}, phase: ${room.phase}`);
+        }
+      } else {
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`[SSE] Room ${roomId} not found`);
+        }
       }
 
       // Listen for room updates
@@ -27,9 +38,16 @@ export async function GET(
       const handleUpdate = (room: unknown) => {
         const data = `data: ${JSON.stringify(room)}\n\n`;
         controller.enqueue(encoder.encode(data));
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`[SSE] Broadcasted update for room ${roomId}`);
+        }
       };
 
       roomEvents.on(eventName, handleUpdate);
+
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`[SSE] Registered listener for ${eventName}, total listeners: ${roomEvents.listenerCount(eventName)}`);
+      }
 
       // Send heartbeat every 15 seconds to keep connection alive
       const heartbeat = setInterval(() => {
@@ -41,6 +59,9 @@ export async function GET(
         roomEvents.off(eventName, handleUpdate);
         clearInterval(heartbeat);
         controller.close();
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`[SSE] Connection closed for room ${roomId}, remaining listeners: ${roomEvents.listenerCount(eventName)}`);
+        }
       });
     },
   });

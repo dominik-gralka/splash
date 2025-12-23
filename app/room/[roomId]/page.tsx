@@ -23,35 +23,12 @@ export default function RoomPage() {
   const [loading, setLoading] = useState(true);
   const [reconnecting, setReconnecting] = useState(false);
 
-  // Host speichert Room-State im localStorage
+  // Host speichert Room-State im localStorage (nur als Backup für Recovery)
   useEffect(() => {
     if (room && playerId) {
       const currentPlayer = room.players.find(p => p.id === playerId);
       if (currentPlayer?.isHost) {
         localStorage.setItem(`room_${roomId}`, JSON.stringify(room));
-      }
-    }
-  }, [room, playerId, roomId]);
-
-  // Host synchronisiert State mit Server bei jedem Update
-  useEffect(() => {
-    if (room && playerId) {
-      const currentPlayer = room.players.find(p => p.id === playerId);
-      if (currentPlayer?.isHost) {
-        // Debounce: nur alle 2 Sekunden syncen
-        const syncTimeout = setTimeout(async () => {
-          try {
-            await fetch(`/api/rooms/${roomId}/sync`, {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ room, playerId }),
-            });
-          } catch (err) {
-            console.error('Sync error:', err);
-          }
-        }, 500);
-
-        return () => clearTimeout(syncTimeout);
       }
     }
   }, [room, playerId, roomId]);
@@ -70,21 +47,28 @@ export default function RoomPage() {
 
     const connect = () => {
       // Create SSE connection
+      console.log(`[SSE Client] Connecting to room ${roomId}`);
       eventSource = new EventSource(`/api/rooms/${roomId}/events`);
+
+      eventSource.onopen = () => {
+        console.log(`[SSE Client] Connection opened for room ${roomId}`);
+      };
 
       eventSource.onmessage = (event) => {
         try {
           const updatedRoom: Room = JSON.parse(event.data);
+          console.log(`[SSE Client] Received update for room ${roomId}, phase: ${updatedRoom.phase}`);
           setRoom(updatedRoom);
           setError('');
           setReconnecting(false);
           setLoading(false);
         } catch (err) {
-          console.error('Error parsing SSE data:', err);
+          console.error('[SSE Client] Error parsing SSE data:', err);
         }
       };
 
       eventSource.onerror = async () => {
+        console.log(`[SSE Client] Connection error for room ${roomId}`);
         eventSource?.close();
 
         // Try to recover from localStorage if host

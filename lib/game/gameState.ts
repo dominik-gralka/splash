@@ -2,15 +2,12 @@ import { Room, Player, GameRound, CreateRoomRequest, Hint, Vote } from './types'
 import { getRandomWord } from './words';
 import { EventEmitter } from 'events';
 
-// Event Emitter für Broadcasts
-export const roomEvents = new EventEmitter();
-roomEvents.setMaxListeners(100); // Erhöhe Limit für viele Clients
-
 // In-Memory Storage für Räume
 // WICHTIG: In serverless Umgebungen (Vercel) wird dieser State bei jedem Cold Start zurückgesetzt!
 // Für Production empfohlen: Vercel KV oder eine Datenbank verwenden
 // Für self-hosted: `next start` verwenden (kein serverless)
 let rooms: Map<string, Room>;
+let roomEvents: EventEmitter;
 
 // Singleton Pattern - verhindert multiple Instanzen
 if (typeof global !== 'undefined') {
@@ -21,9 +18,24 @@ if (typeof global !== 'undefined') {
   }
   // @ts-ignore
   rooms = global.__gameRooms;
+
+  // @ts-ignore - global augmentation
+  if (!global.__roomEvents) {
+    // @ts-ignore
+    global.__roomEvents = new EventEmitter();
+    // @ts-ignore
+    global.__roomEvents.setMaxListeners(100);
+  }
+  // @ts-ignore
+  roomEvents = global.__roomEvents;
 } else {
   rooms = new Map<string, Room>();
+  roomEvents = new EventEmitter();
+  roomEvents.setMaxListeners(100);
 }
+
+// Export EventEmitter
+export { roomEvents };
 
 // Debugging: Logge State-Änderungen
 if (process.env.NODE_ENV === 'development') {
@@ -32,10 +44,14 @@ if (process.env.NODE_ENV === 'development') {
 
 // Hilfsfunktion: Broadcast room update
 function broadcastRoomUpdate(roomId: string, room: Room) {
-  roomEvents.emit(`room:${roomId}`, room);
+  const eventName = `room:${roomId}`;
+  const listenerCount = roomEvents.listenerCount(eventName);
+
   if (process.env.NODE_ENV === 'development') {
-    console.log(`[Broadcast] Room ${roomId} updated, phase: ${room.phase}`);
+    console.log(`[Broadcast] Room ${roomId} updated, phase: ${room.phase}, listeners: ${listenerCount}`);
   }
+
+  roomEvents.emit(eventName, room);
 }
 
 // Hilfsfunktion: Generiere Raum-ID
