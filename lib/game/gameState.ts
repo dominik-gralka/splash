@@ -230,16 +230,28 @@ export function submitHint(
     }
     room.currentRound.hints1.push(hintObj);
     player.hasSubmittedHint1 = true;
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[submitHint] ${player.name} submitted hint1: "${hint}". Total hints1: ${room.currentRound.hints1.length}/${room.players.length}`);
+    }
   } else {
     if (player.hasSubmittedHint2) {
       throw new Error('Hinweis bereits abgegeben');
     }
     room.currentRound.hints2.push(hintObj);
     player.hasSubmittedHint2 = true;
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[submitHint] ${player.name} submitted hint2: "${hint}". Total hints2: ${room.currentRound.hints2.length}/${room.players.length}`);
+    }
   }
 
+  const phaseBefore = room.phase;
   // Prüfen ob alle Hinweise abgegeben wurden
   checkHintPhaseComplete(room, roundNum);
+
+  if (process.env.NODE_ENV === 'development' && phaseBefore !== room.phase) {
+    console.log(`[submitHint] Phase auto-advanced from ${phaseBefore} to ${room.phase}`);
+  }
+
   broadcastRoomUpdate(roomId, room);
 
   return room;
