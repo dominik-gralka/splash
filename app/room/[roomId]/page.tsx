@@ -56,7 +56,7 @@ export default function RoomPage() {
     }
   }, [room, playerId, roomId]);
 
-  // Polling für Updates
+  // SSE Connection for real-time updates
   useEffect(() => {
     const storedPlayerId = localStorage.getItem('playerId');
     if (!storedPlayerId) {
@@ -65,66 +65,81 @@ export default function RoomPage() {
     }
     setPlayerId(storedPlayerId);
 
-    const fetchRoom = async () => {
-      try {
-        const res = await fetch(`/api/rooms/${roomId}`);
-        const data = await res.json();
+    let eventSource: EventSource | null = null;
+    let reconnectTimeout: NodeJS.Timeout | null = null;
 
-        if (!res.ok) {
-          // Raum nicht auf Server gefunden
-          if (res.status === 404) {
-            // Wenn wir der Host sind, stelle den State wieder her
-            const storedRoom = localStorage.getItem(`room_${roomId}`);
-            if (storedRoom) {
-              const parsedRoom: Room = JSON.parse(storedRoom);
-              const isHost = parsedRoom.players.some(
-                p => p.id === storedPlayerId && p.isHost
-              );
+    const connect = () => {
+      // Create SSE connection
+      eventSource = new EventSource(`/api/rooms/${roomId}/events`);
 
-              if (isHost) {
-                setReconnecting(true);
-                // Sende State zum Server
-                const syncRes = await fetch(`/api/rooms/${roomId}/sync`, {
-                  method: 'PUT',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ room: parsedRoom, playerId: storedPlayerId }),
-                });
+      eventSource.onmessage = (event) => {
+        try {
+          const updatedRoom: Room = JSON.parse(event.data);
+          setRoom(updatedRoom);
+          setError('');
+          setReconnecting(false);
+          setLoading(false);
+        } catch (err) {
+          console.error('Error parsing SSE data:', err);
+        }
+      };
 
-                if (syncRes.ok) {
-                  setRoom(parsedRoom);
-                  setError('');
-                  setReconnecting(false);
-                  return;
-                }
+      eventSource.onerror = async () => {
+        eventSource?.close();
+
+        // Try to recover from localStorage if host
+        const storedRoom = localStorage.getItem(`room_${roomId}`);
+        if (storedRoom) {
+          try {
+            const parsedRoom: Room = JSON.parse(storedRoom);
+            const isHost = parsedRoom.players.some(
+              p => p.id === storedPlayerId && p.isHost
+            );
+
+            if (isHost) {
+              setReconnecting(true);
+              // Sync state to server
+              const syncRes = await fetch(`/api/rooms/${roomId}/sync`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ room: parsedRoom, playerId: storedPlayerId }),
+              });
+
+              if (syncRes.ok) {
+                setRoom(parsedRoom);
+                setError('');
+                setReconnecting(false);
               }
+            } else {
+              setError('Warte auf Host...');
+              setReconnecting(true);
             }
-
-            // Nicht-Host: warte auf Host-Reconnect
-            setError('Warte auf Host...');
-            setReconnecting(true);
-            return;
+          } catch (err) {
+            console.error('Recovery error:', err);
+            setError('Verbindungsfehler');
           }
-
-          throw new Error(data.error || 'Raum nicht gefunden');
+        } else {
+          setError('Warte auf Host...');
+          setReconnecting(true);
         }
 
-        setRoom(data.room);
-        setError('');
-        setReconnecting(false);
-      } catch (err: unknown) {
-        if (!reconnecting) {
-          setError(err instanceof Error ? err.message : 'Fehler beim Laden');
-        }
-      } finally {
-        setLoading(false);
-      }
+        // Reconnect after 2 seconds
+        reconnectTimeout = setTimeout(connect, 2000);
+      };
     };
 
-    fetchRoom();
-    const interval = setInterval(fetchRoom, 1000); // Update jede Sekunde
+    // Initial connection
+    connect();
 
-    return () => clearInterval(interval);
-  }, [roomId, router, reconnecting]);
+    return () => {
+      if (eventSource) {
+        eventSource.close();
+      }
+      if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout);
+      }
+    };
+  }, [roomId, router]);
 
   const leaveRoom = async () => {
     try {

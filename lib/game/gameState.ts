@@ -1,5 +1,10 @@
 import { Room, Player, GameRound, CreateRoomRequest, Hint, Vote } from './types';
 import { getRandomWord } from './words';
+import { EventEmitter } from 'events';
+
+// Event Emitter für Broadcasts
+export const roomEvents = new EventEmitter();
+roomEvents.setMaxListeners(100); // Erhöhe Limit für viele Clients
 
 // In-Memory Storage für Räume
 // WICHTIG: In serverless Umgebungen (Vercel) wird dieser State bei jedem Cold Start zurückgesetzt!
@@ -23,6 +28,14 @@ if (typeof global !== 'undefined') {
 // Debugging: Logge State-Änderungen
 if (process.env.NODE_ENV === 'development') {
   console.log(`[GameState] Initialized with ${rooms.size} rooms`);
+}
+
+// Hilfsfunktion: Broadcast room update
+function broadcastRoomUpdate(roomId: string, room: Room) {
+  roomEvents.emit(`room:${roomId}`, room);
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`[Broadcast] Room ${roomId} updated, phase: ${room.phase}`);
+  }
 }
 
 // Hilfsfunktion: Generiere Raum-ID
@@ -66,6 +79,7 @@ export function createRoom(request: CreateRoomRequest): Room {
   };
 
   rooms.set(roomId, room);
+  broadcastRoomUpdate(roomId, room);
   return room;
 }
 
@@ -95,6 +109,7 @@ export function joinRoom(roomId: string, playerName: string): { room: Room; play
   };
 
   room.players.push(player);
+  broadcastRoomUpdate(roomId, room);
   return { room, playerId };
 }
 
@@ -117,6 +132,7 @@ export function removePlayer(roomId: string, playerId: string): Room | null {
     room.players[0].isHost = true;
   }
 
+  broadcastRoomUpdate(roomId, room);
   return room;
 }
 
@@ -135,6 +151,7 @@ export function startGame(roomId: string, playerId: string): Room {
 
   // Neue Runde starten
   startNewRound(room);
+  broadcastRoomUpdate(roomId, room);
 
   return room;
 }
@@ -207,6 +224,7 @@ export function submitHint(
 
   // Prüfen ob alle Hinweise abgegeben wurden
   checkHintPhaseComplete(room, roundNum);
+  broadcastRoomUpdate(roomId, room);
 
   return room;
 }
@@ -252,6 +270,7 @@ export function advancePhase(roomId: string, playerId: string): Room {
       break;
   }
 
+  broadcastRoomUpdate(roomId, room);
   return room;
 }
 
@@ -280,6 +299,7 @@ export function submitVote(roomId: string, voterId: string, targetId: string): R
     evaluateVotes(room);
   }
 
+  broadcastRoomUpdate(roomId, room);
   return room;
 }
 
@@ -342,6 +362,7 @@ export function nextRound(roomId: string, playerId: string): Room {
 
   // Neue Runde starten
   startNewRound(room);
+  broadcastRoomUpdate(roomId, room);
 
   return room;
 }
@@ -367,6 +388,7 @@ export function backToLobby(roomId: string, playerId: string): Room {
     p.hasVoted = false;
   });
 
+  broadcastRoomUpdate(roomId, room);
   return room;
 }
 
