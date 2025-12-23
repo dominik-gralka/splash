@@ -22,6 +22,8 @@ export default function RoomPage() {
   const [error, setError] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [reconnecting, setReconnecting] = useState(false);
+  const [sseConnected, setSseConnected] = useState(false);
+  const [sseEventCount, setSseEventCount] = useState(0);
 
   // Host speichert Room-State im localStorage (nur als Backup für Recovery)
   useEffect(() => {
@@ -52,12 +54,14 @@ export default function RoomPage() {
 
       eventSource.onopen = () => {
         console.log(`[SSE Client] Connection opened for room ${roomId}`);
+        setSseConnected(true);
       };
 
       eventSource.onmessage = (event) => {
         try {
           const updatedRoom: Room = JSON.parse(event.data);
-          console.log(`[SSE Client] Received update for room ${roomId}, phase: ${updatedRoom.phase}`);
+          console.log(`[SSE Client] Received update for room ${roomId}, phase: ${updatedRoom.phase}, players: ${updatedRoom.players.length}`);
+          setSseEventCount(prev => prev + 1);
           setRoom(updatedRoom);
           setError('');
           setReconnecting(false);
@@ -69,6 +73,7 @@ export default function RoomPage() {
 
       eventSource.onerror = async () => {
         console.log(`[SSE Client] Connection error for room ${roomId}`);
+        setSseConnected(false);
         eventSource?.close();
 
         // Try to recover from localStorage if host
@@ -204,12 +209,18 @@ export default function RoomPage() {
                 SPLASH
               </h1>
               <p className="text-muted-foreground text-sm mt-1">Raum: <span className="text-foreground font-mono tracking-wider">{roomId}</span></p>
-              {isHost && (
-                <p className="text-xs text-crew mt-1 flex items-center gap-1">
-                  <span className="w-2 h-2 bg-crew rounded-full animate-pulse"></span>
-                  Host (State-Owner)
+              <div className="flex items-center gap-3 mt-1">
+                {isHost && (
+                  <p className="text-xs text-crew flex items-center gap-1">
+                    <span className="w-2 h-2 bg-crew rounded-full animate-pulse"></span>
+                    Host
+                  </p>
+                )}
+                <p className={`text-xs flex items-center gap-1 ${sseConnected ? 'text-green-500' : 'text-red-500'}`}>
+                  <span className={`w-2 h-2 rounded-full ${sseConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></span>
+                  SSE: {sseConnected ? 'Connected' : 'Disconnected'} ({sseEventCount} events)
                 </p>
-              )}
+              </div>
             </div>
             <button
               onClick={leaveRoom}
