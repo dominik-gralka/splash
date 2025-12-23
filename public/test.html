@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Splash Browser Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+        .container {
+            display: flex;
+            gap: 20px;
+        }
+        .player {
+            flex: 1;
+            border: 2px solid #333;
+            padding: 15px;
+            border-radius: 8px;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            background: #f0f0f0;
+            border-radius: 4px;
+        }
+        .connected { background: #90EE90; }
+        .disconnected { background: #FFB6C1; }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+        }
+        .hint-list {
+            margin-top: 10px;
+            min-height: 100px;
+        }
+        .hint-item {
+            padding: 5px;
+            background: #e0e0e0;
+            margin: 3px 0;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Splash SSE Browser Test</h1>
+
+    <div>
+        <button onclick="createRoom()">1. Create Room</button>
+        <button onclick="joinPlayer()">2. Join as Player</button>
+        <button onclick="startGame()">3. Start Game</button>
+        <button onclick="advanceToHint()">4. Advance to Hint Phase</button>
+    </div>
+
+    <div id="roomInfo" style="margin: 20px 0;"></div>
+
+    <div class="container">
+        <div class="player">
+            <h2>Host</h2>
+            <div id="hostStatus" class="status disconnected">Disconnected</div>
+            <div>Events: <span id="hostEvents">0</span></div>
+            <div>Phase: <span id="hostPhase">-</span></div>
+            <div>Players: <span id="hostPlayers">0</span></div>
+            <input id="hostHint" placeholder="Hint" />
+            <button onclick="submitHint('host')">Submit Hint</button>
+            <div class="hint-list" id="hostHints"></div>
+        </div>
+
+        <div class="player">
+            <h2>Player 1</h2>
+            <div id="p1Status" class="status disconnected">Disconnected</div>
+            <div>Events: <span id="p1Events">0</span></div>
+            <div>Phase: <span id="p1Phase">-</span></div>
+            <div>Players: <span id="p1Players">0</span></div>
+            <input id="p1Hint" placeholder="Hint" />
+            <button onclick="submitHint('p1')">Submit Hint</button>
+            <div class="hint-list" id="p1Hints"></div>
+        </div>
+
+        <div class="player">
+            <h2>Player 2</h2>
+            <div id="p2Status" class="status disconnected">Disconnected</div>
+            <div>Events: <span id="p2Events">0</span></div>
+            <div>Phase: <span id="p2Phase">-</span></div>
+            <div>Players: <span id="p2Players">0</span></div>
+            <input id="p2Hint" placeholder="Hint" />
+            <button onclick="submitHint('p2')">Submit Hint</button>
+            <div class="hint-list" id="p2Hints"></div>
+        </div>
+    </div>
+
+    <script>
+        let roomId = null;
+        let hostId = null;
+        let p1Id = null;
+        let p2Id = null;
+
+        let hostSSE = null;
+        let p1SSE = null;
+        let p2SSE = null;
+
+        let hostEventCount = 0;
+        let p1EventCount = 0;
+        let p2EventCount = 0;
+
+        function updateDisplay(player, room) {
+            const prefix = player === 'host' ? 'host' : player === 'p1' ? 'p1' : 'p2';
+            document.getElementById(`${prefix}Phase`).textContent = room.phase;
+            document.getElementById(`${prefix}Players`).textContent = room.players.length;
+
+            const hints = room.currentRound?.hints1 || [];
+            const hintsDiv = document.getElementById(`${prefix}Hints`);
+            hintsDiv.innerHTML = hints.map(h =>
+                `<div class="hint-item">${h.playerName}: ${h.hint}</div>`
+            ).join('');
+        }
+
+        function connectSSE(player) {
+            const prefix = player === 'host' ? 'host' : player === 'p1' ? 'p1' : 'p2';
+
+            const eventSource = new EventSource(`http://localhost:3000/api/rooms/${roomId}/events`);
+
+            eventSource.onopen = () => {
+                console.log(`[${player}] SSE connected`);
+                document.getElementById(`${prefix}Status`).className = 'status connected';
+                document.getElementById(`${prefix}Status`).textContent = 'Connected';
+            };
+
+            eventSource.onmessage = (event) => {
+                if (player === 'host') hostEventCount++;
+                else if (player === 'p1') p1EventCount++;
+                else p2EventCount++;
+
+                document.getElementById(`${prefix}Events`).textContent =
+                    player === 'host' ? hostEventCount : player === 'p1' ? p1EventCount : p2EventCount;
+
+                const room = JSON.parse(event.data);
+                console.log(`[${player}] SSE event #${document.getElementById(`${prefix}Events`).textContent}:`, {
+                    phase: room.phase,
+                    players: room.players.length,
+                    hints: room.currentRound?.hints1?.length || 0
+                });
+                updateDisplay(player, room);
+            };
+
+            eventSource.onerror = () => {
+                console.error(`[${player}] SSE error`);
+                document.getElementById(`${prefix}Status`).className = 'status disconnected';
+                document.getElementById(`${prefix}Status`).textContent = 'Error';
+            };
+
+            return eventSource;
+        }
+
+        async function createRoom() {
+            const res = await fetch('http://localhost:3000/api/rooms/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    hostName: 'Host',
+                    maxPlayers: 4,
+                    impostorCount: 1,
+                    useHint2: false
+                })
+            });
+            const data = await res.json();
+            roomId = data.room.id;
+            hostId = data.playerId;
+
+            document.getElementById('roomInfo').innerHTML = `
+                <strong>Room ID:</strong> ${roomId}<br>
+                <strong>Host ID:</strong> ${hostId}
+            `;
+
+            console.log('Room created:', roomId);
+
+            // Connect SSE for all players
+            hostSSE = connectSSE('host');
+            p1SSE = connectSSE('p1');
+            p2SSE = connectSSE('p2');
+        }
+
+        async function joinPlayer() {
+            const res = await fetch('http://localhost:3000/api/rooms/join', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    roomId: roomId,
+                    playerName: 'Alice'
+                })
+            });
+            const data = await res.json();
+            p1Id = data.playerId;
+            console.log('Player 1 joined:', p1Id);
+
+            const res2 = await fetch('http://localhost:3000/api/rooms/join', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    roomId: roomId,
+                    playerName: 'Bob'
+                })
+            });
+            const data2 = await res2.json();
+            p2Id = data2.playerId;
+            console.log('Player 2 joined:', p2Id);
+        }
+
+        async function startGame() {
+            await fetch('http://localhost:3000/api/game/start', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ roomId, playerId: hostId })
+            });
+            console.log('Game started');
+        }
+
+        async function advanceToHint() {
+            await fetch('http://localhost:3000/api/game/advance', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ roomId, playerId: hostId })
+            });
+            console.log('Advanced to hint phase');
+        }
+
+        async function submitHint(player) {
+            const prefix = player === 'host' ? 'host' : player === 'p1' ? 'p1' : 'p2';
+            const hint = document.getElementById(`${prefix}Hint`).value;
+            const playerId = player === 'host' ? hostId : player === 'p1' ? p1Id : p2Id;
+
+            if (!hint) {
+                alert('Please enter a hint');
+                return;
+            }
+
+            const res = await fetch('http://localhost:3000/api/game/hint', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    roomId,
+                    playerId,
+                    hint,
+                    round: 1
+                })
+            });
+
+            if (res.ok) {
+                console.log(`[${player}] Hint submitted:`, hint);
+                document.getElementById(`${prefix}Hint`).value = '';
+            } else {
+                const error = await res.json();
+                console.error(`[${player}] Hint error:`, error);
+                alert(error.error);
+            }
+        }
+    </script>
+</body>
+</html>
